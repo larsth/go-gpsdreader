@@ -1,0 +1,3 @@
+github.com/larsth/go-gpsdscanner/reader.go:21:	New		100.0%
+github.com/larsth/go-gpsdscanner/reader.go:35:	Scan		77.8%
+total:						(statements)	87.5%

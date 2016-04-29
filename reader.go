@@ -10,6 +10,8 @@ import (
 	"github.com/larsth/linescanner"
 )
 
+var ErrNotInitialized = errors.New("The scanner is not initialized (nil io.Reader)")
+
 type Scanner struct {
 	mutex       sync.Mutex
 	reader      io.Reader
@@ -18,6 +20,7 @@ type Scanner struct {
 
 func New(reader io.Reader) (*Scanner, error) {
 	var err error
+
 	r := new(Scanner)
 	r.reader = reader
 	if r.lineScanner, err = linescanner.New(reader); err != nil {
@@ -29,16 +32,19 @@ func New(reader io.Reader) (*Scanner, error) {
 	return r, nil
 }
 
-func (s *Scanner) Scan() ([]byte, error) {
+func (s *Scanner) Scan() (ok bool, p []byte, err error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	for s.lineScanner.Scan() == false {
-		if err := s.lineScanner.Err(); err != nil {
-			annotatedErr := errors.Annotate(err,
-				"A \"github.com/larsth/linescanner\".Linescanner.Scan() error")
-			return nil, annotatedErr
-		}
+	if s.reader == nil {
+		return false, nil, ErrNotInitialized
 	}
-	return s.lineScanner.Bytes(), nil
+
+	ok = s.lineScanner.Scan()
+	if err := s.lineScanner.Err(); err != nil {
+		annotatedErr := errors.Annotate(err,
+			"A \"github.com/larsth/linescanner\".Linescanner.Scan() error")
+		return false, nil, annotatedErr
+	}
+	return true, s.lineScanner.Bytes(), nil
 }
